@@ -1,16 +1,12 @@
-# TechSol portfolio
+# TechSol
 
-Next.js + TypeScript portfolio concept for TechSol, built from the project brief as the design source.
+A Next.js and TypeScript portfolio for TechSol.
 
-## Run locally
-
-Install dependencies and start the Next.js app:
+## Local development
 
 ```powershell
 npm install
 npm run dev
 ```
 
-Then visit `http://localhost:3000`.
-
-The page uses Framer Motion for scroll reveals, GSAP for orbital motion, and an optional Three.js particle field. The new palette is ink, cream, tangerine, and cobalt for a warmer editorial feel.
+Open `http://localhost:3000`.

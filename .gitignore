@@ -1,0 +1,8 @@
+# Dependencies and generated Next.js output
+node_modules/
+.next/
+
+# Local development output
+dev.log
+tsconfig.tsbuildinfo
+.env*

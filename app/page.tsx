@@ -1,105 +1,63 @@
 'use client';
 
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, MouseEvent, ReactNode, useEffect, useRef, useState } from 'react';
 
-type ProjectKind = 'lb' | 'calendiq';
+type Preview = { src: string; alt: string };
+type Theme = 'light' | 'dark';
+type CaseKey = 'lb' | 'calendiq';
 
 const services = [
-  ['Website systems', 'Conversion-led websites that make a business look as good as it is.', '⌁'],
-  ['App products', 'Focused web and mobile products that simplify the work that matters.', '◒'],
-  ['Automation', 'Connected workflows that save time and let good teams move faster.', '≋'],
-  ['Brand & graphic design', 'Visual identities and creative systems that stay recognisable.', '✣'],
+  { name: 'Websites', title: 'A digital front door that feels like you.', text: 'A considered home for your business, with a clear next step for every visitor.' },
+  { name: 'Apps', title: 'The everyday work, made lighter.', text: 'Practical web and mobile products for the things your team does again and again.' },
+  { name: 'Bookings', title: 'No more chasing the next appointment.', text: 'Simple journeys that turn interest, calls, and messages into confirmed bookings.' },
+  { name: 'Automation', title: 'The useful things happen on time.', text: 'Thoughtful reminders and handoffs that keep the small but important things moving.' },
+  { name: 'Brand & design', title: 'Clear enough to be remembered.', text: 'A visual system that makes the right people feel at home with your business.' },
 ];
 
-const clients = [
-  ['VL', 'Vikram Limbachiya', 'Co-founder, LB The Hair Studio', '“TechSol translated our vision into a digital experience that feels as premium as our space.”'],
-  ['NL', 'Nipam Limbachiya', 'Founder, Calendiq', '“They made a complex product feel focused, simple and genuinely pleasant to use.”'],
-  ['RM', 'Rohan Mehta', 'CEO, Urban Culture', '“Professional, responsive, and incredibly thoughtful from first sketch to launch.”'],
-  ['AS', 'Ananya Shah', 'Marketing Head, Glow Spa', '“A rare team that combines sharp visual taste with real business understanding.”'],
-];
+const projects = {
+  lb: { name: 'LB The Hair Studio', short: 'A premium salon experience, made easier to book.', desktop: '/projects/lb-desktop.png', mobile: '/projects/lb-mobile.jpg', href: 'https://lbthehairstudio.in/', before: 'A beautiful salon with scattered enquiries, phone calls, and no single digital home.', after: 'A story-led website with a clear path from first look to appointment.', result: '+68%', resultLabel: 'more bookings in 90 days' },
+  calendiq: { name: 'Calendiq', short: 'Appointments, customers, and the daily queue in one calm place.', desktop: '/projects/calendiq-desktop.png', mobile: '/projects/calendiq-mobile.jpg', href: 'https://calendiq.onrender.com/', before: 'Staff were jumping between bookings, customers, and follow-up reminders.', after: 'One clear platform for the appointments and the work around them.', result: '2', resultLabel: 'live clients onboarded' },
+};
 
-function Reveal({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <motion.div className={className} initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: .65, ease: [.22, 1, .36, 1] }}>{children}</motion.div>;
+function Icon({ name }: { name: 'arrow' | 'mail' | 'whatsapp' | 'moon' | 'sun' }) {
+  const attr = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.65, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  const art: Record<string, ReactNode> = {
+    arrow: <><path {...attr} d="M3 12h17M14 6l6 6-6 6" /></>,
+    mail: <><rect {...attr} x="3" y="5" width="18" height="14" rx="1.5" /><path {...attr} d="m4 7 8 6 8-6" /></>,
+    whatsapp: <><path {...attr} d="M20.5 11.5a8.5 8.5 0 0 1-12.55 7.48L3.5 20.5l1.54-4.2A8.5 8.5 0 1 1 20.5 11.5Z" /><path {...attr} d="M8.8 7.8c.2-.5.4-.5.7-.5h.6c.2 0 .4.1.5.4l.8 1.9c.1.3.1.5-.1.7l-.6.7c.5 1 1.3 1.8 2.3 2.3l.7-.6c.2-.2.5-.2.7-.1l1.9.8c.3.1.4.3.4.5v.6c0 .3-.1.5-.5.7-.5.2-1.1.3-1.7.1-2.7-.8-5-3.1-5.8-5.8-.2-.6-.1-1.2.1-1.7Z" /></>,
+    moon: <path {...attr} d="M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z" />,
+    sun: <><circle {...attr} cx="12" cy="12" r="3.2" /><path {...attr} d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
+  };
+  return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">{art[name]}</svg>;
 }
 
-function Browser({ src, alt }: { src: string; alt: string }) {
-  return <div className="browser"><div className="browser-top"><i /><i /><i /><span>techsol.studio / selected-work</span></div><div className="browser-body"><Image src={src} alt={alt} width={1920} height={1080} /></div></div>;
+function Reveal({ children, className = '' }: { children: ReactNode; className?: string }) { return <div className={`reveal ${className}`}>{children}</div>; }
+
+function MagneticButton({ children, className = '', href, target }: { children: ReactNode; className?: string; href: string; target?: string }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const move = (event: MouseEvent<HTMLAnchorElement>) => { const node = ref.current; const rect = node?.getBoundingClientRect(); if (!rect || !node) return; const x = (event.clientX - rect.left - rect.width / 2) * .12; const y = (event.clientY - rect.top - rect.height / 2) * .15; node.style.transform = `translate(${x}px, ${y}px)`; };
+  const leave = () => { if (ref.current) ref.current.style.transform = ''; };
+  return <a ref={ref} href={href} target={target} rel={target ? 'noreferrer' : undefined} onMouseMove={move} onMouseLeave={leave} className={`button ${className}`}>{children}</a>;
 }
 
-function Phone({ src, alt }: { src: string; alt: string }) {
-  return <div className="phone"><div className="phone-blur" style={{ backgroundImage: `url(${src})` }} /><span className="phone-notch" /><Image src={src} alt={alt} fill sizes="(max-width: 720px) 42vw, 180px" /></div>;
+function Count({ end, prefix = '' }: { end: number; prefix?: string }) {
+  const [count, setCount] = useState(0); const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => { const element = ref.current; if (!element) return; const observer = new IntersectionObserver(([entry]) => { if (!entry.isIntersecting) return; const start = performance.now(); const animate = (time: number) => { const progress = Math.min((time - start) / 650, 1); setCount(Math.round(end * progress)); if (progress < 1) requestAnimationFrame(animate); }; requestAnimationFrame(animate); observer.disconnect(); }, { threshold: .6 }); observer.observe(element); return () => observer.disconnect(); }, [end]);
+  return <span ref={ref}>{prefix}{count}</span>;
 }
 
-function WorkProject({ type, onPreview }: { type: ProjectKind; onPreview: (src: string, alt: string) => void }) {
-  const media = useRef<HTMLDivElement>(null);
-  const isLb = type === 'lb';
-  const title = isLb ? 'LB The Hair Studio' : 'Calendiq';
-  const description = isLb
-    ? 'A luxury salon website with editorial storytelling, appointment conversion, and a confident digital identity.'
-    : 'A multi-tenant appointment platform bringing scheduling, customers, staff, and business growth into one calm system.';
-  const url = isLb ? 'https://lbthehairstudio.in/' : 'https://calendiq.onrender.com/';
-  const desktopSrc = isLb ? '/projects/lb-desktop.png' : '/projects/calendiq-desktop.png';
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const element = media.current; if (!element) return;
-      const next = element.scrollLeft >= element.clientWidth - 10 ? 0 : element.clientWidth;
-      element.scrollTo({ left: next, behavior: 'smooth' });
-    }, 2000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return <article className={`project project-${type}`}>
-    <div className="project-meta"><span>{isLb ? '01' : '02'} /</span><span>{isLb ? 'Branding, website & growth system' : 'Product design & development'}</span></div>
-    <div className="project-grid">
-      <div className="project-title"><h3>{title}</h3><p>{isLb ? 'A digital home for a premium salon experience.' : 'Scheduling clarity for ambitious service businesses.'}</p><a href={url} target="_blank" rel="noreferrer">View project <b>→</b></a></div>
-      <div className="project-media" ref={media} aria-label={`${title} project screens. Swipe horizontally to see mobile screens.`}>
-        <div className="media-track">
-          <div className="media-slide desktop-slide"><button className="media-open" type="button" onClick={() => onPreview(desktopSrc, `${title} desktop screenshot`)} aria-label={`Open ${title} desktop screenshot`}><Browser src={desktopSrc} alt={`${title} desktop screenshot`} /></button></div>
-          <div className="media-slide phone-slide">{isLb ? <button className="media-open" type="button" onClick={() => onPreview('/projects/lb-mobile.jpg', 'LB The Hair Studio mobile screenshot')} aria-label="Open LB The Hair Studio mobile screenshot"><Phone src="/projects/lb-mobile.jpg" alt="LB The Hair Studio mobile screenshot" /></button> : <div className="phone-pair"><button className="media-open" type="button" onClick={() => onPreview('/projects/calendiq-mobile.jpg', 'Calendiq mobile dashboard')} aria-label="Open Calendiq mobile dashboard"><Phone src="/projects/calendiq-mobile.jpg" alt="Calendiq mobile dashboard" /></button><button className="media-open" type="button" onClick={() => onPreview('/projects/calendiq-signin.jpg', 'Calendiq mobile sign in')} aria-label="Open Calendiq mobile sign in"><Phone src="/projects/calendiq-signin.jpg" alt="Calendiq mobile sign in" /></button></div>}</div>
-        </div>
-        <div className="media-hint"><span>drag to explore</span><b>→</b></div>
-      </div>
-    </div>
-  </article>;
-}
+function HeroDrawing() { return <div className="hero-growth" aria-label="A growth path from before us to business grows"><svg viewBox="0 0 640 390" fill="none" aria-hidden="true"><path className="growth-trunk" pathLength="1" d="M330 340 Q315 260 330 191 Q350 112 328 44" /><path className="growth-branch growth-left" pathLength="1" d="M325 246 Q250 237 194 271 Q148 299 109 250" /><path className="growth-branch growth-right" pathLength="1" d="M335 183 Q408 178 460 132 Q504 94 555 127" /><circle className="growth-dot dot-root" cx="330" cy="340" r="8" /><circle className="growth-dot dot-left" cx="109" cy="250" r="8" /><circle className="growth-dot dot-right" cx="555" cy="127" r="8" /><circle className="growth-dot dot-tip" cx="328" cy="44" r="10" /></svg><span className="growth-label label-root">before us</span><span className="growth-label label-left">we step in</span><span className="growth-label label-right">system live</span><span className="growth-label label-tip">business grows</span></div>; }
 
-function ContactIcon({ kind }: { kind: 'email' | 'whatsapp' }) {
-  return kind === 'email'
-    ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h18v11H3zM4 7l8 6 8-6" /></svg>
-    : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.4a8.5 8.5 0 0 1-12.55 7.48l-4.35 1.55 1.43-4.37A8.5 8.5 0 1 1 20.5 11.4Z" /><path d="M8.9 7.8c.2-.4.4-.5.7-.5h.6c.2 0 .4.2.5.4l.8 1.9c.1.3.1.5-.1.7l-.6.7c.5 1 1.3 1.8 2.3 2.3l.7-.6c.2-.2.5-.2.7-.1l1.9.8c.3.1.4.3.4.5v.6c0 .3-.2.5-.5.7-.5.2-1.1.3-1.7.1-2.7-.8-5-3.1-5.8-5.8-.2-.6-.1-1.2.1-1.7Z" /></svg>;
-}
-
-function ClientRail() {
-  const rail = useRef<HTMLDivElement>(null);
-  const drag = useRef({ active: false, x: 0, scroll: 0 });
-  const down = (event: React.PointerEvent<HTMLDivElement>) => { if (!rail.current) return; drag.current = { active: true, x: event.clientX, scroll: rail.current.scrollLeft }; rail.current.setPointerCapture(event.pointerId); };
-  const move = (event: React.PointerEvent<HTMLDivElement>) => { if (rail.current && drag.current.active) rail.current.scrollLeft = drag.current.scroll - (event.clientX - drag.current.x); };
-  const stop = () => { drag.current.active = false; };
-  const wheel = (event: React.WheelEvent<HTMLDivElement>) => { if (rail.current && Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); rail.current.scrollLeft += event.deltaY; } };
-  return <div className="client-rail" ref={rail} onPointerDown={down} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onWheel={wheel}>{clients.map(([initials, name, role, quote]) => <article className="client-quote" key={name}><div className="client-avatar">{initials}</div><p>{quote}</p><h3>{name}</h3><span>{role}</span></article>)}</div>;
-}
+function CaseStudy({ projectKey, open }: { projectKey: CaseKey; open: (item: Preview) => void }) {
+  const [view, setView] = useState<'before' | 'after'>('before'); const project = projects[projectKey];
+  return <article className={`case-study case-${projectKey}`}><div className="case-kicker"><span>case study / {projectKey === 'lb' ? '01' : '02'}</span><a className="visit-demo" href={project.href} target="_blank" rel="noreferrer"><span className="visit-desktop-label">Visit live site</span><span className="visit-mobile-label">Demo</span><Icon name="arrow" /></a></div><div className="case-heading"><h3>{project.name}</h3><p>{project.short}</p></div><div className="case-layout"><div className="case-copy"><p className="case-pull">“{view === 'before' ? project.before : project.after}”</p><div className="case-toggle" aria-label={`View ${project.name} before and after`}><button type="button" className={view === 'before' ? 'active' : ''} onClick={() => setView('before')}>Before</button><button type="button" className={view === 'after' ? 'active' : ''} onClick={() => setView('after')}>What we built</button></div><p className="case-transition-text">{view === 'before' ? 'The everyday issue' : 'The practical change'}</p><p className="case-detail">{view === 'before' ? project.before : project.after}</p><div className="case-number"><strong>{project.result.startsWith('+') ? <Count end={68} prefix="+" /> : <Count end={2} />}</strong><span>{project.resultLabel}</span></div></div><div className="case-media"><button type="button" className="desktop-shot" onClick={() => open({ src: project.desktop, alt: `${project.name} desktop experience` })} aria-label={`Open ${project.name} desktop project image`}><div><i /><i /><i /><span>live project</span></div><Image src={project.desktop} alt={`${project.name} desktop experience`} fill sizes="(max-width: 800px) 86vw, 650px" /></button><button type="button" className="mobile-shot" onClick={() => open({ src: project.mobile, alt: `${project.name} mobile experience` })} aria-label={`Open ${project.name} mobile project image`}><Image src={project.mobile} alt={`${project.name} mobile experience`} fill sizes="140px" /></button></div></div></article>;}
 
 export default function Home() {
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [preview, setPreview] = useState<{ src: string; alt: string } | null>(null);
-  const sendInquiry = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); setStatus('sending');
-    try {
-      const result = await fetch('https://formsubmit.co/ajax/omahukal05@gmail.com', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), service: data.get('service'), message: data.get('message'), _subject: `New TechSol inquiry from ${data.get('name')}`, _template: 'table', _captcha: 'false' }) });
-      if (!result.ok) throw new Error('Submit failed'); form.reset(); setStatus('sent');
-    } catch { setStatus('error'); }
-  };
-
-  return <><div className="noise" />
-    <header className="site-header"><a className="brand" href="#top">TECHSOL</a><nav><a href="#work">Work</a><a href="#services">Services</a><a href="#clients">About</a><a href="#contact">Contact</a></nav><a className="header-button" href="#contact">Start a project <span>→</span></a><a className="mobile-menu" href="#contact" aria-label="Contact TechSol">☰</a></header>
-    {preview && <div className="image-modal" role="dialog" aria-modal="true" aria-label={preview.alt} onClick={() => setPreview(null)}><div className="image-modal-content" onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setPreview(null)} aria-label="Close image preview">×</button><Image src={preview.src} alt={preview.alt} fill sizes="95vw" /></div></div>}
-    <main id="top">
-      <section className="hero shell"><Reveal className="hero-copy"><p className="overline">/ Digital studio</p><h1>Make your<br />business <em>hard</em> to ignore.</h1><p>We design digital products, growth systems and brands that command attention and drive real results.</p><a className="inline-link" href="#work">See our work <span>→</span></a></Reveal><Reveal className="hero-image"><div className="hero-image-wrap"><Image src="/hero-growth-team.png" alt="Tech team working together" fill priority sizes="(max-width: 720px) 88vw, 50vw" /></div><div className="hero-note"><span>India<br />creative team</span><i /></div></Reveal><div className="hero-strip"><span>Digital products · growth systems · brands</span><em>Built to earn attention.</em><b>→</b></div></section>
-      <section id="work" className="work shell"><Reveal className="section-top"><p className="overline">/ Selected work</p><p>We turn practical business needs into sharp, useful digital experiences.</p></Reveal><WorkProject type="lb" onPreview={(src, alt) => setPreview({ src, alt })} /><WorkProject type="calendiq" onPreview={(src, alt) => setPreview({ src, alt })} /></section>
-      <section id="services" className="services shell"><p className="overline">/ Services</p><div className="service-list">{services.map(([title, description, icon]) => <article key={title}><i>{icon}</i><div><h3>{title}</h3><p>{description}</p></div><b>→</b></article>)}</div><a className="services-link" href="#contact">Explore all services <span>→</span></a></section>
-      <section id="clients" className="clients"><div className="shell clients-head"><div><p className="overline">/ Trusted by ambitious teams</p><h2>Good work gets<br /><em>remembered.</em></h2></div><p>Mouse scroll or drag sideways to hear from the people we partner with.</p></div><ClientRail /></section>
-      <section id="contact" className="contact"><div className="shell"><div className="contact-main"><div><p className="overline">/ Have a business idea?</p><h2>Let&apos;s build something<br /><em>extraordinary.</em></h2></div><div className="contact-links"><a href="mailto:omahukal05@gmail.com" aria-label="Email TechSol"><ContactIcon kind="email" /> Email us</a><a href="https://wa.me/919265182934" target="_blank" rel="noreferrer" aria-label="Message TechSol on WhatsApp"><ContactIcon kind="whatsapp" /> Chat on WhatsApp</a></div><form onSubmit={sendInquiry}><input name="name" placeholder="Your name" required /><input name="email" type="email" placeholder="Your email" required /><select name="service" defaultValue="" required><option value="" disabled>What can we help with?</option><option>Website system</option><option>App product</option><option>Automation</option><option>Brand & graphic design</option><option>Other technology service</option></select><textarea name="message" placeholder="Tell us about your project" rows={3} required /><button type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Start a project'} <span>→</span></button>{status === 'sent' && <small className="form-success">Thank you — your inquiry has been sent.</small>}{status === 'error' && <small className="form-error">Couldn&apos;t send that right now. Please use email or WhatsApp.</small>}</form></div><footer><span>© 2026 TechSol</span><span>Digital products for growing teams</span><a href="#top">Back to top ↑</a></footer></div></section>
-    </main>
-  </>;
+  const [theme, setTheme] = useState<Theme>('dark'); const [preview, setPreview] = useState<Preview | null>(null); const [menuOpen, setMenuOpen] = useState(false); const [serviceTab, setServiceTab] = useState(0); const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  useEffect(() => { const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('is-visible'); }), { threshold: .12 }); document.querySelectorAll('.reveal').forEach((element) => observer.observe(element)); return () => observer.disconnect(); }, []);
+  useEffect(() => { const savedTheme = window.localStorage.getItem('techsol-theme'); if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme); }, []);
+  const toggleTheme = () => setTheme((current) => { const next = current === 'light' ? 'dark' : 'light'; window.localStorage.setItem('techsol-theme', next); return next; });
+  const sendInquiry = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); setStatus('sending'); try { const response = await fetch('https://formsubmit.co/ajax/omahukal05@gmail.com', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), service: data.get('service'), message: data.get('message'), _subject: `New TechSol inquiry from ${data.get('name')}`, _template: 'table', _captcha: 'false' }) }); if (!response.ok) throw new Error('Unable to send'); form.reset(); setStatus('sent'); } catch { setStatus('error'); } };
+  return <div className="site" data-theme={theme}><header className="site-header"><a href="#top" className="wordmark">TechSol<span>.</span></a><button className="menu-toggle" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen}>Menu</button><nav className={menuOpen ? 'is-open' : ''}><a onClick={() => setMenuOpen(false)} href="#work">Work</a><a onClick={() => setMenuOpen(false)} href="#services">Services</a><a onClick={() => setMenuOpen(false)} href="#about">About</a><a onClick={() => setMenuOpen(false)} href="#contact">Contact</a></nav><button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}><Icon name={theme === 'light' ? 'moon' : 'sun'} /></button></header><main id="top"><section className="hero shell"><Reveal className="hero-copy"><p className="microcopy">for salons, builders and local businesses ready to stop doing things by hand</p><h1><span>When the little jobs</span><span>stop getting in the way,</span><em>the good work grows.</em></h1><p className="hero-text">Websites, apps, and thoughtful automations for the bookings, messages, and everyday admin that deserve to feel simpler.</p><div className="hero-actions"><MagneticButton href="#work" className="button-primary">See our work <Icon name="arrow" /></MagneticButton><a className="text-link" href="#contact">Start a project <Icon name="arrow" /></a></div><div className="hero-stats"><div><strong><Count end={2} /></strong><span>live client projects</span></div><div><strong><Count end={2} /></strong><span>ways to see the work</span></div><div><strong>1:1</strong><span>builder-to-client care</span></div></div></Reveal><Reveal className="hero-art"><HeroDrawing /></Reveal></section><section id="services" className="services shell"><Reveal><p className="microcopy">What we can take off your plate</p><h2>Good technology should<br /><em>feel like a relief.</em></h2></Reveal><Reveal><div className="service-tabs" role="tablist">{services.map((service, index) => <button key={service.name} role="tab" type="button" aria-selected={serviceTab === index} className={serviceTab === index ? 'active' : ''} onClick={() => setServiceTab(index)}>{service.name}</button>)}</div><div className="service-panel" key={services[serviceTab].name}><p className="microcopy">{String(serviceTab + 1).padStart(2, '0')} / what it changes</p><h3>{services[serviceTab].title}</h3><p>{services[serviceTab].text}</p><a className="text-link" href="#contact">Talk through it <Icon name="arrow" /></a></div></Reveal></section><section id="work" className="work"><div className="shell"><Reveal><div className="work-intro"><p className="microcopy">A closer look</p><h2>Small details.<br /><em>Big difference.</em></h2><p>There is no prize for adding more software. We build the useful bit, then make it feel natural.</p></div></Reveal><CaseStudy projectKey="lb" open={setPreview} /><CaseStudy projectKey="calendiq" open={setPreview} /></div></section><section id="about" className="about shell"><Reveal><div><p className="microcopy">How we work</p><h2>We ask about the<br />messy bits <em>first.</em></h2></div></Reveal><Reveal><div className="about-copy"><p>What gets repeated? Where do customers wait? Which WhatsApp messages get lost at the end of a long day?</p><p>Then we make the next step clear.</p><div className="process-line"><span>Listen</span><i /><span>Make it clear</span><i /><span>Build it well</span><i /><span>Keep improving</span></div></div></Reveal></section><section className="team shell"><Reveal><p className="microcopy">The people behind the work</p><h2>Two builders.<br /><em>Close to the details.</em></h2><p className="team-note">We do not hand your project through a chain of departments. The people you speak with are the people shaping the work.</p></Reveal><Reveal><div className="team-list"><article><span>TechSol / client builds</span><h3>Leads the conversations, scope, and choices that make a project useful.</h3></article><article><span>TechSol / design and outreach</span><h3>Makes the experience clear, human, and easy to come back to.</h3></article></div></Reveal></section><section id="contact" className="contact"><div className="shell contact-grid"><Reveal><p className="microcopy">A good place to start</p><h2>Tell us what keeps<br />getting <em>in the way.</em></h2><p>We will keep the first conversation simple. A WhatsApp message is usually the fastest way in.</p><div className="contact-actions"><MagneticButton href="https://wa.me/919265182934" target="_blank" className="button-primary"><Icon name="whatsapp" /> Message on WhatsApp</MagneticButton><a className="text-link" href="mailto:omahukal05@gmail.com"><Icon name="mail" /> Send an email</a></div></Reveal><Reveal><form onSubmit={sendInquiry} className="contact-form"><label>Your name<input name="name" required placeholder="Your name" /></label><label>Work email<input name="email" type="email" required placeholder="you@company.com" /></label><label>What would you like help with?<select name="service" defaultValue="" required><option value="" disabled>Choose a starting point</option><option>Website</option><option>Web or mobile app</option><option>Booking or automation</option><option>Brand and design</option><option>Something else</option></select></label><label>A little context<textarea name="message" required rows={3} placeholder="What feels harder than it should?" /></label><button className="button button-submit" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending...' : 'Send inquiry'} <Icon name="arrow" /></button>{status === 'sent' && <p className="form-note success">Your note is on its way.</p>}{status === 'error' && <p className="form-note error">Please try WhatsApp or email instead.</p>}</form></Reveal></div></section></main><footer className="shell"><a href="#top" className="wordmark">TechSol<span>.</span></a><span>Quiet systems, warm delivery.</span><span>© 2026</span></footer>{preview && <div className="preview-modal" role="dialog" aria-modal="true" aria-label={preview.alt} onClick={() => setPreview(null)}><div className="preview-window" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => setPreview(null)}>Close</button><Image src={preview.src} alt={preview.alt} fill sizes="95vw" /></div></div>}</div>;
 }
